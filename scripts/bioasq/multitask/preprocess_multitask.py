@@ -1,0 +1,127 @@
+import json
+import re
+import os
+import pandas as pd
+from datasets import Dataset
+
+def load_and_process_multitask_bioasq(filepath, is_training=True):
+    with open(filepath, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+        
+    multitask_records = []
+    yesno_count = 0
+    qa_count = 0
+    
+    for q in data['questions']:
+        if q['type'] not in ['factoid', 'list', 'yesno']:
+            continue
+            
+        # Stratégie As-Snippets : Traiter chaque snippet individuellement
+        for snippet in q.get('snippets', []):
+            snippet_text = snippet.get('text', '').strip()
+            context_normalized = re.sub(r'\s+', ' ', snippet_text).strip()
+            
+            if not context_normalized:
+                continue
+            
+            # --- QUESTIONS YES/NO (task_id = 1) ---
+            if q['type'] == 'yesno':
+                raw_answer = str(q.get('exact_answer', '')).lower()
+                label = 1 if 'yes' in raw_answer else 0
+                
+                multitask_records.append({
+                    "id": q['id'],
+                    "task_id": 1,  # Flag d'identification de tâche explicite
+                    "type": q['type'],
+                    "context": context_normalized,
+                    "question": q['body'].strip(),
+                    "label": label,
+                    "answers": {"text": [], "answer_start": []} # Structure vide pour harmoniser le DataFrame
+                })
+                yesno_count += 1
+                
+            # --- QUESTIONS FACTOID & LIST (task_id = 0) ---
+            elif q['type'] in ['factoid', 'list']:
+                exact_answers = q.get('exact_answer', [])
+                if not exact_answers:
+                    continue
+                    
+                if isinstance(exact_answers[0], list):
+                    answers_list = [item for sublist in exact_answers for item in sublist]
+                else:
+                    answers_list = exact_answers
+
+                valid_texts = []
+                valid_starts = []
+                
+                for ans in answers_list:
+                    ans_clean = re.sub(r'\s+', ' ', str(ans).strip())
+                    pos = context_normalized.find(ans_clean)
+                    
+                    if pos == -1:
+                        match = re.search(re.escape(ans_clean), context_normalized, re.IGNORECASE)
+                        if match:
+                            pos = match.start()
+                            ans_clean = match.group()
+                    
+                    if pos != -1: 
+                        valid_texts.append(ans_clean)
+                        valid_starts.append(pos)
+                
+                if not valid_texts:
+                    continue 
+                    
+                multitask_records.append({
+                    "id": q['id'],
+                    "task_id": 0,  # Flag d'identification de tâche explicite
+                    "type": q['type'],
+                    "context": context_normalized,
+                    "question": q['body'].strip(),
+                    "label": -1,   # Label ignoré pour la tête classification
+                    "answers": {
+                        "text": valid_texts,
+                        "answer_start": valid_starts
+                    }
+                })
+                qa_count += 1
+                
+    df = pd.DataFrame(multitask_records)
+    
+    # Équilibrage par Undersampling de la classe Yes/No si entraînement
+    if is_training and not df.empty:
+        df_yn = df[df['task_id'] == 1]
+        df_qa = df[df['task_id'] == 0]
+        
+        if not df_yn.empty and not df_qa.empty:
+            counts = df_yn['label'].value_counts()
+            if len(counts) == 2:
+                min_class = counts.min()
+                # On équilibre les Yes et les No
+                df_yn_balanced = df_yn.groupby('label').apply(lambda x: x.sample(n=min_class, random_state=42)).reset_index(drop=True)
+                df = pd.concat([df_qa, df_yn_balanced], ignore_index=True)
+
+    print(f"[{os.path.basename(filepath)}] QA samples: {qa_count} | Yes/No samples: {yesno_count}")
+    return Dataset.from_pandas(df)
+
+if __name__ == "__main__":
+    os.makedirs("datasets", exist_ok=True)
+
+    print("\n--- ÉTAPE 1 : PREPROCESSING DES JEUX DE DONNÉES ---")
+    
+    # Chemin vers ton fichier de train officiel BioASQ
+    train_dataset_raw = load_and_process_multitask_bioasq(
+        'datasets/BioASQ-training13b/BioASQ-training13b/training13b.json', 
+        is_training=True
+    )
+    
+    # Chemin vers ton premier fichier golden de validation (ex: 13B1)
+    val_dataset_raw = load_and_process_multitask_bioasq(
+        'datasets/Task13BGoldenEnriched/Task13BGoldenEnriched/13B1_golden.json', 
+        is_training=False
+    )
+    
+    # Sauvegarde au format JSON Lines unifié
+    train_dataset_raw.to_json("datasets/multitask_bioasq_train.json", orient="records", lines=True)
+    val_dataset_raw.to_json("datasets/multitask_bioasq_val.json", orient="records", lines=True)
+
+    print("\n[SUCCÈS] Les fichiers ont été générés et stockés dans le dossier 'datasets/' !")
