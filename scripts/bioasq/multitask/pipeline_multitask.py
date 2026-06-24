@@ -73,9 +73,6 @@ class UnifiedBioASQPipeline:
                         if start_idx >= len(start_probs) or end_idx >= len(end_probs) or start_idx > end_idx:
                             continue
                         
-                        # if end_idx - start_idx + 1 > 15: # Ignore longest spans (arbitrary threshold)
-                        #     continue
-
                         # Calculate the combined probability of the span
                         span_prob = start_probs[start_idx] * end_probs[end_idx]
 
