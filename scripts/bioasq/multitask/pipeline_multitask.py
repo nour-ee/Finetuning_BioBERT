@@ -6,7 +6,6 @@ import glob
 import pandas as pd
 import numpy as np
 from transformers import AutoTokenizer
-# Importation de l'architecture multitâche
 from scripts.bioasq.paper_approach.train_multitask import MultitaskBioBERT 
 
 class UnifiedBioASQPipeline:
@@ -14,10 +13,10 @@ class UnifiedBioASQPipeline:
         print("Initializing Unified Multitask Pipeline...")
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
-        # Charger le tokenizer unique
+        # Load the tokenizer from the specified path
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
         
-        # Charger le modèle multitâche et injecter les poids optimisés
+        # Load the multitask model and inject the optimized weights
         self.model = MultitaskBioBERT()
         self.model.load_state_dict(torch.load(model_weights_path, map_location=self.device))
         self.model.to(self.device)
@@ -34,12 +33,12 @@ class UnifiedBioASQPipeline:
             return "Error: Empty Context snippets."
 
         # =====================================================================
-        # TÂCHE 0 : ROUTING FACTOID & LIST (Stratégie As-Snippet + Seuil 0.42)
+        # TASK 0 : ROUTING FACTOID & LIST (AS-SNIPPET-IS STRATEGY + THRESHOLD 0.42)
         # =====================================================================
         if question_type in ['factoid', 'list']:
             all_candidates = {}
 
-            # Étape 1 : Inférence indépendante pour CHAQUE snippet (Stratégie As-Snippet)
+            # Step 1 : Independent inference for EACH snippet (As-Snippet Strategy)
             for snippet in snippets_list:
                 context = self._clean_text(snippet.get('text', '').strip())
                 if not context:
@@ -54,17 +53,17 @@ class UnifiedBioASQPipeline:
                     padding="max_length"
                 ).to(self.device)
 
-                # Injection manuelle du flag de tâche pour la tête QA
+                # Manual injection of the task flag for the QA head
                 inputs['task_ids'] = torch.tensor([0], device=self.device)
 
                 with torch.no_grad():
                     outputs = self.model(**inputs)
 
-                # Calcul des probabilités par softmax sur les logits de la tête QA
+                # Calculate the probabilities for start and end positions using softmax
                 start_probs = torch.softmax(outputs["start_logits"], dim=-1)[0].cpu().numpy()
                 end_probs = torch.softmax(outputs["end_logits"], dim=-1)[0].cpu().numpy()
 
-                # Exploration du Top 5 pour éviter les coupures et gérer les listes
+                # Exploration of the Top 5 to avoid truncation and handle lists
                 n_best = 5
                 start_indexes = np.argsort(start_probs)[::-1][:n_best]
                 end_indexes = np.argsort(end_probs)[::-1][:n_best]
@@ -74,54 +73,53 @@ class UnifiedBioASQPipeline:
                         if start_idx >= len(start_probs) or end_idx >= len(end_probs) or start_idx > end_idx:
                             continue
                         
-                        if end_idx - start_idx + 1 > 15: # Ignorer les spans trop longs
-                            continue
+                        # if end_idx - start_idx + 1 > 15: # Ignore longest spans (arbitrary threshold)
+                        #     continue
 
-                        # Calcul de la probabilité combinée du span
+                        # Calculate the combined probability of the span
                         span_prob = start_probs[start_idx] * end_probs[end_idx]
 
-                        # Décodage textuel du span
+                        # Decode the span text from the token IDs
                         all_tokens = self.tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
                         ans_text = self.tokenizer.convert_tokens_to_string(all_tokens[start_idx : end_idx + 1]).strip()
 
                         if not ans_text or "[CLS]" in ans_text or "[SEP]" in ans_text:
                             continue
                         
-                        # Post-processing : nettoyage et filtre des parenthèses asymétriques
+                        # Post-processing: clean and filter asymmetric parentheses
                         ans_text = ans_text.strip(',.()').strip()
                         if ans_text.count('(') != ans_text.count(')'):
                             continue
 
-                        # Sauvegarde de la meilleure probabilité pour cette chaîne exacte
+                        # Save the best probability for this exact string
                         if ans_text and (ans_text not in all_candidates or span_prob > all_candidates[ans_text]):
                             all_candidates[ans_text] = span_prob
 
             if not all_candidates:
                 return "No extraction found"
 
-            # Tri des candidats par confiance décroissante
+            # Sorted candidates by descending probability
             sorted_candidates = sorted(all_candidates.items(), key=lambda x: x[1], reverse=True)
 
-            # --- Règle d'extraction Factoid ---
+            # --- For factoid, we return the top candidate---
             if question_type == 'factoid':
                 return sorted_candidates[0][0]
 
-            # --- Règle d'extraction List ---
+            # --- For list, we apply a strict threshold of 0.42 ---
             elif question_type == 'list':
-                # Filtrage strict avec le seuil mathématique de 0.42
                 final_list = [text for text, prob in sorted_candidates if prob >= 0.42]
 
-                # Sécurité : renvoyer au moins le Top 1 si rien ne dépasse le seuil
+                # Security: return at least the Top 1 if nothing exceeds the threshold
                 if not final_list:
                     final_list = [sorted_candidates[0][0]]
 
                 return " | ".join(final_list)
 
         # =====================================================================
-        # TÂCHE 1 : ROUTING YES/NO (Stratégie As-Passages / Concaténation globale)
+        # TASK 1 : ROUTING YES/NO (Stratégie As-Passages / global Concatenation )
         # =====================================================================
         elif question_type == 'yesno':
-            # Pour la classification, on garde la fusion globale des snippets comme à l'entraînement
+            # context is the concatenation of all snippets
             context = self._clean_text(" ".join([s.get('text', '').strip() for s in snippets_list]))
             
             inputs = self.tokenizer(
@@ -133,7 +131,7 @@ class UnifiedBioASQPipeline:
                 padding="max_length"
             ).to(self.device)
             
-            # Injection manuelle du flag de tâche pour la tête de classification
+            # Manual injection of the task flag for the classification head
             inputs['task_ids'] = torch.tensor([1], device=self.device)
 
             with torch.no_grad():
@@ -168,7 +166,7 @@ class UnifiedBioASQPipeline:
         return filename, pd.DataFrame(results)
 
 # =====================================================================
-# BLOC D'EXÉCUTION
+# EXECUTION
 # =====================================================================
 if __name__ == "__main__":
     pipeline = UnifiedBioASQPipeline(
