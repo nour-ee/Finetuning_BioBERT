@@ -1,4 +1,4 @@
-# finetuning biobert model for question answering on pqa-a dataset 
+# Same code as scenario1 ( train_1_pubmedqa.py ) 
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
 from datasets import load_dataset
 import torch
