@@ -70,5 +70,3 @@ trainer_pqa_a = WeightedLossTrainer(model=model, args=args_fine_pqa_a, train_dat
 trainer_pqa_a.train()
 trainer_pqa_a.save_model("./pqa_a_finetuned_model") 
 tokenizer.save_pretrained("./pqa_a_finetuned_model")
-
-# model.save_pretrained("./pqa_a_finetuned_model")
