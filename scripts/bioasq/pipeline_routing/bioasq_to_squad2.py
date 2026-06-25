@@ -13,8 +13,8 @@ def load_and_process_bioasq(filepath):
     debug_filepath = f"debug_{base_name}.txt"
     
     with open(debug_filepath, "w", encoding="utf-8") as debug_file:
-        debug_file.write(f"=== RAPPORT DE DÉBOGAGE POUR : {filepath} ===\n")
-        debug_file.write("Liste des snippets/questions exclus car AUCUNE réponse n'a été trouvée.\n")
+        debug_file.write(f"=== REPORT DEBUG : {filepath} ===\n")
+        debug_file.write("List of snippets/questions excluded because NO answer was found.\n")
         debug_file.write("=" * 80 + "\n\n")
         
     processed_records = []
@@ -29,13 +29,13 @@ def load_and_process_bioasq(filepath):
         if not exact_answers:
             continue
             
-        # Aplatir la liste des réponses si nécessaire
+        # Flatten the list of answers if necessary
         if isinstance(exact_answers[0], list):
             answers_list = [item for sublist in exact_answers for item in sublist]
         else:
             answers_list = exact_answers
 
-        # Compteurs basés sur les questions d'origine sélectionnées
+        # Counting the number of factoid and list questions in the original dataset
         if q['type'] == 'factoid':
             count_factoid += 1
         elif q['type'] == 'list':
@@ -44,13 +44,14 @@ def load_and_process_bioasq(filepath):
         snippets = q.get('snippets', [])
         question_matched_at_least_once = False
         
-        # STRATÉGIE AS-SNIPPETS : On traite CHAQUE snippet comme un contexte indépendant
+
+        # AS-SNIPPETS-IS STRATEGY: Treat EACH snippet as an independent context
         for snippet_idx, snippet in enumerate(snippets):
             snippet_text = snippet.get('text', '').strip()
             if not snippet_text:
                 continue
                 
-            # Normalisation des espaces pour le snippet courant
+            # Normalization of spaces for the current snippet
             snippet_normalized = re.sub(r'\s+', ' ', snippet_text).strip()
             if not snippet_normalized:
                 continue
@@ -58,31 +59,32 @@ def load_and_process_bioasq(filepath):
             valid_texts = []
             valid_starts = []
             
-            # Recherche de TOUTES les réponses possibles dans CE snippet précis
+            # Retrieve all possible answers in THIS specific snippet
             for ans in answers_list:
                 ans_clean = str(ans).strip() 
                 ans_clean = re.sub(r'\s+', ' ', ans_clean)
                 
-                # 1. Tentative stricte
+
+                # We first try to find the answer in the snippet with exact matching
                 pos = snippet_normalized.find(ans_clean)
                 
-                # 2. Tentative insensible à la casse
+                # If the answer is not found, we try to find it in a case-insensitive manner
                 if pos == -1:
                     match = re.search(re.escape(ans_clean), snippet_normalized, re.IGNORECASE)
                     if match:
                         pos = match.start()
                         ans_clean = match.group()
                 
-                # Si la réponse est présente dans ce snippet, on l'ajoute
+                # If the answer is present in this snippet, we add it
                 if pos != -1:
                     valid_texts.append(ans_clean)
                     valid_starts.append(pos)
             
-            # Si le snippet contient au moins une réponse, on l'ajoute comme un exemple distinct
+            # If the snippet contains at least one answer, we add it as a distinct example
             if valid_texts:
                 question_matched_at_least_once = True
                 processed_records.append({
-                    # On modifie l'ID pour identifier le snippet d'origine (ex: "5c52f01a_0")
+                    # Modify the ID to identify the original snippet (e.g., "5c52f01a_0")
                     "id": f"{q['id']}_{snippet_idx}", 
                     "original_id": q['id'],
                     "type": q['type'],
@@ -94,7 +96,7 @@ def load_and_process_bioasq(filepath):
                     }
                 })
                 
-        # Logging de debug uniquement si aucun snippet de la question n'a pu matcher
+        # If none of the snippets for this question matched any answer, we log it for debugging
         if not question_matched_at_least_once:
             with open("debug_unmatched_questions_with_all_answersn.txt", "a", encoding="utf-8") as debug_file:
                 debug_file.write(f"Question ID: {q['id']}\n")
@@ -109,19 +111,14 @@ def load_and_process_bioasq(filepath):
         
     return Dataset.from_pandas(pd.DataFrame(processed_records))
 
-# =====================================================================
-# EXECUTION POUR TRAINING ET TEST (Le reste de votre code reste identique)
-# =====================================================================
+# ===============================================
+# EXECUTION FOR TRAINING AND TESTING 
+# ===============================================
 
-# Extraction et processus
+# Load and process the official BioASQ training dataset (e.g., BioASQ-training13b.json)
 hf_dataset = load_and_process_bioasq('datasets/BioASQ-training13b/BioASQ-training13b/training13b.json')
 
-# Vérification des -1
-if len(hf_dataset) > 0:
-    minus_one_count = sum(1 for example in hf_dataset if example['answers']['answer_start'][0] == -1)
-    print(f"Number of examples with -1 (should be 0): {minus_one_count}")
-
-# Statistiques du dataset généré
+# Statistics of the generated dataset
 factoid_count = sum(1 for example in hf_dataset if example['type'].startswith('factoid'))
 list_count = sum(1 for example in hf_dataset if example['type'].startswith('list'))
 
@@ -130,25 +127,19 @@ print(f"Number of valid list snippet-samples: {list_count}")
 
 output_json_path = "datasets/BioASQ_processed2_for_biobert.json"
 hf_dataset.to_json(output_json_path, orient="records", lines=True)
-print(f"Dataset sauvegardé avec succès dans : {output_json_path}\n")
+print(f"Dataset saved successfully in : {output_json_path}\n")
 
 
-##################### PREPROCESSING TEST FILES ########################
-for batch_num in range(1, 5):
-    batch_file = f"datasets/Task13BGoldenEnriched/Task13BGoldenEnriched/13B{batch_num}_golden.json"
-    print(f"Processing {batch_file}...")
-    hf_dataset = load_and_process_bioasq(batch_file)
+##################### PREPROCESSING VALIDATION FILE ########################
     
-    if len(hf_dataset) > 0:
-        minus_one_count = sum(1 for example in hf_dataset if example['answers']['answer_start'][0] == -1)
-        print(f"Number of examples with -1 (should be 0): {minus_one_count}")
+batch_file = f"datasets/Task13BGoldenEnriched/Task13BGoldenEnriched/13B1_golden.json"
+print(f"Processing {batch_file}...")
+hf_dataset = load_and_process_bioasq(batch_file)
 
-    factoid_count = sum(1 for example in hf_dataset if example['type'].startswith('factoid'))
-    list_count = sum(1 for example in hf_dataset if example['type'].startswith('list'))
-
-    print(f"Number of valid factoid snippet-samples: {factoid_count}")
-    print(f"Number of valid list snippet-samples: {list_count}")
-
-    output_json_path = f"datasets/13B{batch_num}_processed2.json"
-    hf_dataset.to_json(output_json_path, orient="records", lines=True)
-    print(f"Dataset sauvegardé avec succès dans : {output_json_path}\n")
+factoid_count = sum(1 for example in hf_dataset if example['type'].startswith('factoid'))
+list_count = sum(1 for example in hf_dataset if example['type'].startswith('list'))
+print(f"Number of valid factoid snippet-samples: {factoid_count}")
+print(f"Number of valid list snippet-samples: {list_count}")
+output_json_path = f"datasets/13B1_processed2.json"
+hf_dataset.to_json(output_json_path, orient="records", lines=True)
+print(f"Dataset saved successfully in : {output_json_path}\n")
