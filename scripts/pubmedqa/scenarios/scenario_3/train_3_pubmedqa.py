@@ -4,7 +4,11 @@ from datasets import load_dataset
 import torch
 from torch import nn
 from collections import Counter
-# 1. Initialize BioBERT Architecture
+
+# ==========================================
+#  Initialize BioBERT Architecture
+# ==========================================
+
 model_name = "dmis-lab/biobert-v1.1"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 label_map = {"yes": 0, "no": 1, "maybe": 2}
@@ -24,7 +28,6 @@ class WeightedLossTrainer(Trainer):
         outputs = model(**inputs)
         logits = outputs.get("logits") 
         
-        # FIX MULTI-GPU: On récupère le device directement depuis le tenseur des labels
         device = labels.device 
         
         # YES is 92.8% of the data, NO is 7.2%, MAYBE is 0% in Phase 1.
@@ -33,7 +36,6 @@ class WeightedLossTrainer(Trainer):
         
         loss_fct = nn.CrossEntropyLoss(weight=weights) 
         
-        # FIX MULTI-GPU: Utilisation de self.model.config au lieu de model.config
         loss = loss_fct(logits.view(-1, self.model.config.num_labels), labels.view(-1)) 
         return (loss, outputs) if return_outputs else loss
     
