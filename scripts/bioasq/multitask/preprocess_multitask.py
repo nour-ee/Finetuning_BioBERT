@@ -16,7 +16,7 @@ def load_and_process_multitask_bioasq(filepath, is_training=True):
         if q['type'] not in ['factoid', 'list', 'yesno']:
             continue
             
-        # Stratégie As-Snippets : Traiter chaque snippet individuellement
+        # As-Snippets-is Strategy : each snippet is treated as a separate context for the same question
         for snippet in q.get('snippets', []):
             snippet_text = snippet.get('text', '').strip()
             context_normalized = re.sub(r'\s+', ' ', snippet_text).strip()
@@ -31,12 +31,12 @@ def load_and_process_multitask_bioasq(filepath, is_training=True):
                 
                 multitask_records.append({
                     "id": q['id'],
-                    "task_id": 1,  # Flag d'identification de tâche explicite
+                    "task_id": 1,  
                     "type": q['type'],
                     "context": context_normalized,
                     "question": q['body'].strip(),
                     "label": label,
-                    "answers": {"text": [], "answer_start": []} # Structure vide pour harmoniser le DataFrame
+                    "answers": {"text": [], "answer_start": []} 
                 })
                 yesno_count += 1
                 
@@ -87,7 +87,7 @@ def load_and_process_multitask_bioasq(filepath, is_training=True):
                 
     df = pd.DataFrame(multitask_records)
     
-    # Équilibrage par Undersampling de la classe Yes/No si entraînement
+    # Undersampling for the training set to balance Yes/No classes 
     if is_training and not df.empty:
         df_yn = df[df['task_id'] == 1]
         df_qa = df[df['task_id'] == 0]
@@ -96,32 +96,31 @@ def load_and_process_multitask_bioasq(filepath, is_training=True):
             counts = df_yn['label'].value_counts()
             if len(counts) == 2:
                 min_class = counts.min()
-                # On équilibre les Yes et les No
+                # Balance Yes/No classes by undersampling the majority class (e.g., Yes) to match the minority class (e.g., No)
                 df_yn_balanced = df_yn.groupby('label').apply(lambda x: x.sample(n=min_class, random_state=42)).reset_index(drop=True)
                 df = pd.concat([df_qa, df_yn_balanced], ignore_index=True)
 
-    print(f"[{os.path.basename(filepath)}] QA samples: {qa_count} | Yes/No samples: {yesno_count}")
     return Dataset.from_pandas(df)
 
 if __name__ == "__main__":
     os.makedirs("datasets", exist_ok=True)
 
-    print("\n--- ÉTAPE 1 : PREPROCESSING DES JEUX DE DONNÉES ---")
+    print("\n--- PREPROCESSING DATASETS ---")
     
-    # Chemin vers ton fichier de train officiel BioASQ
+    # Path to your official BioASQ training file (e.g., BioASQ-training6b.json)
     train_dataset_raw = load_and_process_multitask_bioasq(
-        'datasets/BioASQ-training13b/BioASQ-training13b/training13b.json', 
+        'datasets/BioASQ-training6b/BioASQ-trainingDataset6b.json', 
         is_training=True
     )
     
-    # Chemin vers ton premier fichier golden de validation (ex: 13B1)
+    # Path to your first golden validation file (e.g., 6B1_golden.json)
     val_dataset_raw = load_and_process_multitask_bioasq(
-        'datasets/Task13BGoldenEnriched/Task13BGoldenEnriched/13B1_golden.json', 
+        'datasets/Task6BGoldenEnriched/6B1_golden.json', 
         is_training=False
     )
     
-    # Sauvegarde au format JSON Lines unifié
-    train_dataset_raw.to_json("datasets/multitask_bioasq_train.json", orient="records", lines=True)
-    val_dataset_raw.to_json("datasets/multitask_bioasq_val.json", orient="records", lines=True)
+    # Save the processed datasets in JSON files
+    train_dataset_raw.to_json("datasets/multitask_bioasq_train6b.json", orient="records", lines=True)
+    val_dataset_raw.to_json("datasets/multitask_bioasq_val6b.json", orient="records", lines=True)
 
-    print("\n[SUCCÈS] Les fichiers ont été générés et stockés dans le dossier 'datasets/' !")
+    print("The training dataset is saved as `multitask_bioasq_train6b.json` and the validation dataset as `multitask_bioasq_val6b.json` in datasets directory.")
