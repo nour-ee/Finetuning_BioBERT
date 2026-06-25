@@ -3,16 +3,16 @@ import torch.nn as nn
 from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModel, TrainingArguments, Trainer
 
-# =====================================================================
-# 1. ARCHITECTURE DU MODÈLE MULTITÂCHE BIOBERT
-# =====================================================================
+# ==================================================
+# 1. ARCHITECTURE OF MULTITASK BIOBERT
+# ==================================================
 class MultitaskBioBERT(nn.Module):
     def __init__(self, model_name_or_path="dmis-lab/biobert-base-cased-v1.1-squad", num_labels=2):
         super().__init__()
         self.bert = AutoModel.from_pretrained(model_name_or_path)
         hidden_size = self.bert.config.hidden_size
         
-        self.qa_outputs = nn.Linear(hidden_size, 2) # Début & Fin de span
+        self.qa_outputs = nn.Linear(hidden_size, 2) # Span extraction (start and end logits)
         self.classifier = nn.Linear(hidden_size, num_labels) # Classification Yes/No
         self.dropout = nn.Dropout(self.bert.config.hidden_dropout_prob)
 
@@ -22,7 +22,7 @@ class MultitaskBioBERT(nn.Module):
         sequence_output = self.dropout(outputs[0]) 
         pooled_output = self.dropout(outputs[1]) 
         
-        # Sorties de têtes spécifiques
+        # Outputs of the QA head (span extraction) and classification head (Yes/No)
         qa_logits = self.qa_outputs(sequence_output)
         start_logits, end_logits = qa_logits.split(1, dim=-1)
         start_logits = start_logits.squeeze(-1)
@@ -39,7 +39,7 @@ class MultitaskBioBERT(nn.Module):
             qa_mask = (task_ids == 0).float()
             cls_mask = (task_ids == 1).float()
             
-            # 1. Perte d'extraction de Spans (QA)
+            # 1. Loss for QA (span extraction) task 
             if start_positions is not None and end_positions is not None:
                 start_loss = loss_fct_qa(start_logits, start_positions)
                 end_loss = loss_fct_qa(end_logits, end_positions)
@@ -48,7 +48,7 @@ class MultitaskBioBERT(nn.Module):
                 if qa_mask.sum() > 0:
                     loss += masked_qa_loss.sum() / qa_mask.sum()
             
-            # 2. Perte de classification (Yes/No)
+            # 2. Loss for classification (Yes/No) task
             if labels is not None:
                 cls_loss = loss_fct_cls(classification_logits, labels)
                 masked_cls_loss = cls_loss * cls_mask
@@ -62,9 +62,9 @@ class MultitaskBioBERT(nn.Module):
             "classification_logits": classification_logits
         }
 
-# =====================================================================
+# ===================================================
 # 2. MAPPING & DATA AUGMENTATION (TOKENISATION)
-# =====================================================================
+# ===================================================
 tokenizer = AutoTokenizer.from_pretrained("dmis-lab/biobert-base-cased-v1.1-squad")
 
 def preprocess_multitask_examples(examples):
@@ -72,7 +72,7 @@ def preprocess_multitask_examples(examples):
     start_positions, end_positions = [], []
     
     for i in range(len(examples["question"])):
-        q_type_id = examples["task_id"][i]
+        q_type_id = examples["task_id"][i] # 0 for QA, 1 for Yes/No classification
         
         if q_type_id == 1:  # Question Yes/No
             questions.append(examples["question"][i])
@@ -97,6 +97,8 @@ def preprocess_multitask_examples(examples):
     inputs = tokenizer(questions, contexts, max_length=384, truncation="only_second", padding="max_length", return_offsets_mapping=True)
     offset_mapping = inputs.pop("offset_mapping")
     
+    # Finding the token positions corresponding to the character-level start 
+    # and end positions of the answers
     final_starts, final_ends = [], []
     for idx, offset in enumerate(offset_mapping):
         if task_ids[idx] == 1:
@@ -134,7 +136,7 @@ class MultitaskTrainer(Trainer):
         return (outputs["loss"], outputs) if return_outputs else outputs["loss"]
 
 # =====================================================================
-# 3. BLOC PRINCIPAL D'ENTRAÎNEMENT
+# 3. TRAINING MULTITASK BIOBERT ON BIOASQ DATASET
 # =====================================================================
 if __name__ == "__main__":
     print("\n--- CHARGEMENT DES FICHIERS JSON PRÉPARÉS ---")
@@ -175,7 +177,7 @@ if __name__ == "__main__":
     
     trainer.train()
     
-    # Sauvegardes finales
+    # Save the final model and tokenizer
     torch.save(model.state_dict(), "./multitask_biobert_model.pt")
     tokenizer.save_pretrained("./multitask_biobert_tokenizer")
-    print("\n[SUCCÈS] Modèle multitâche entraîné et sauvegardé avec succès (`./multitask_biobert_model.pt`) !")
+    print("Multitask tokenizer saved at `./multitask_biobert_tokenizer`.")
