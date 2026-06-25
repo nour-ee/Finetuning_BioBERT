@@ -171,7 +171,7 @@ def calculate_performances_pipeline(csv_filepath, output_csv="./results/multitas
             else:
                 preds_raw_list = [raw_pred]
 
-            # Nettoyer chaque prédiction de la liste et filtrer les résidus vides
+            # Clean each prediction in the list and filter out empty residues
             preds_list = [clean_eval_string(p) for p in preds_raw_list if p]
             preds_list = [p for p in preds_list if p != "no extraction found" and p != ""]
             
