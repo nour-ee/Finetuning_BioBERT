@@ -4,7 +4,7 @@ import pandas as pd
 from datasets import Dataset
 import os
 
-########### PREPROCESS FACTOID & LIST QUESTIONS (STRATÉGIE AS-SNIPPETS) ############
+########### PREPROCESS FACTOID & LIST QUESTIONS (AS-SNIPPETS-IS STRATEGY) ############
 def load_and_process_bioasq(filepath):
     with open(filepath, 'r', encoding='utf-8') as f:
         data = json.load(f)
