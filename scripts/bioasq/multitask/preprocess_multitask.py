@@ -115,7 +115,7 @@ if __name__ == "__main__":
     
     # Path to your first golden validation file (e.g., 13B1_golden.json)
     val_dataset_raw = load_and_process_multitask_bioasq(
-        'datasets/Task6BGoldenEnriched/13B1_golden.json', 
+        'datasets/Task13BGoldenEnriched/Task13BGoldenEnriched/13B1_golden.json', 
         is_training=False
     )
     
