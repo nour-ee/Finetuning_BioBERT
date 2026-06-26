@@ -130,8 +130,6 @@ print(f"Validation size after data augmentation: {len(tokenized_val)}")
 #==========================
 
 # Training settings
-#data_collator = DefaultDataCollator() # show to the model how to handle the tokenized inputs # prend les questions tokenisées, les regroupe par paquets de 6 (la taille du batch) et les transforme dans le format mathématique exact (==> le modele sait comment lire les données ) 
-
 training_args = TrainingArguments(
     output_dir="./biobert_bioasq6b_fact_list_model",
     evaluation_strategy="epoch",      
@@ -149,8 +147,7 @@ trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=tokenized_train,
-    eval_dataset=tokenized_val#, 
-    #data_collator=data_collator,
+    eval_dataset=tokenized_val
 )
 
 # Launch the training process
