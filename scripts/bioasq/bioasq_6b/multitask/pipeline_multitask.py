@@ -72,9 +72,6 @@ class UnifiedBioASQPipeline:
                     for end_idx in end_indexes:
                         if start_idx >= len(start_probs) or end_idx >= len(end_probs) or start_idx > end_idx:
                             continue
-                        
-                        # if end_idx - start_idx + 1 > 15: # Ignore longest spans (arbitrary threshold)
-                        #     continue
 
                         # Calculate the combined probability of the span
                         span_prob = start_probs[start_idx] * end_probs[end_idx]
@@ -174,7 +171,7 @@ if __name__ == "__main__":
         tokenizer_path="./multitask_biobert_tokenizer"
     )
     
-    test_files = glob.glob("datasets/Task6BGoldenEnriched/13B[2-5]_golden.json")
+    test_files = glob.glob("datasets/Task6BGoldenEnriched/6B[2-5]_golden.json")
     all_dfs = []
     
     for f_path in test_files:
