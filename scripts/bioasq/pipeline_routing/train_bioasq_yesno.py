@@ -92,4 +92,4 @@ trainer.train()
 #===============================
 model.save_pretrained("./biobert_bioasq13b_yesno_model")
 tokenizer.save_pretrained("./biobert_bioasq13b_yesno_model")
-print("Training script finished successfully. Weights and CSV saved.")
+print("Training script finished successfully.")
