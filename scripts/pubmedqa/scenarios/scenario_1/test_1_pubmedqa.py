@@ -37,11 +37,9 @@ def compute_metrics(eval_pred):
     predictions, labels = eval_pred
     preds = np.argmax(predictions, axis=-1)
     
-    # Métriques issues du second script (macro-averaged)
     precision, recall, f1, _ = precision_recall_fscore_support(labels, preds, average="macro", zero_division=0)
     acc = accuracy_score(labels, preds)
     
-    # Conservation du rapport détaillé pour la console
     print("\n--- Detailed Classification Report ---")
     print(classification_report(labels, preds, target_names=["yes", "no", "maybe"], zero_division=0))
     
@@ -69,10 +67,9 @@ trainer = Trainer(
     compute_metrics=compute_metrics
 )
 
-# Passage du dataset préprocessé
 results = trainer.evaluate(tokenized_pqa_l)
 
-# Extraction des nouvelles clés générées par Hugging Face (préfixées par 'eval_')
+
 final_accuracy = results.get("eval_accuracy")
 final_f1_macro = results.get("eval_f1_macro")
 final_precision_macro = results.get("eval_precision_macro")
@@ -97,7 +94,6 @@ print(f"--- Exporting metrics to {csv_file_path} ---")
 
 base_model_architecture = model.config.architectures[0] if model.config.architectures else "BioBERT"
 
-# Mise à jour des entêtes et des données pour inclure Précision et Rappel
 csv_headers = [
     "Model Architecture", "Subset Evaluated", "Test Set Size", 
     "Raw Accuracy", "Macro F1-Score", "Macro Precision", "Macro Recall", "Test Loss"
