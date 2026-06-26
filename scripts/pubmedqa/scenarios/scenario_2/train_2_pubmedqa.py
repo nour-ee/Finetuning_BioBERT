@@ -70,13 +70,6 @@ raw_val_set = train_val_split["test"]
 # CONCATENATION : PQA-A + Train split de PQA-L
 print("--- Concatenating PQA-A and Train Split of PQA-L ---")
 raw_combined_train = concatenate_datasets([pqa_a, raw_pqa_l_train])
-#A SUPPRIMER : Vérification de la distribution des labels dans le jeu de données combiné
-# #======================================
-# # Print the unique integer codes present in the training column
-# print("Unique label integers:", raw_combined_train.unique("final_decision"))
-# # Print the  5 first rows of the training dataset to verify the labels
-# print("First 5 rows of the training dataset:", raw_combined_train[:5])
-# # Output should look like: [0, 1, 2]
 
 # ==========================================
 # 4. DISTRIBUTION & WEIGHTS CALCULATION
