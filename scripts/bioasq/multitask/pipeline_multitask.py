@@ -38,7 +38,7 @@ class UnifiedBioASQPipeline:
         if question_type in ['factoid', 'list']:
             all_candidates = {}
 
-            # Step 1 : Independent inference for EACH snippet (As-Snippet Strategy)
+            #Independent inference for EACH snippet (As-Snippet Strategy)
             for snippet in snippets_list:
                 context = self._clean_text(snippet.get('text', '').strip())
                 if not context:
