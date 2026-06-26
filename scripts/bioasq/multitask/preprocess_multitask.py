@@ -73,11 +73,11 @@ def load_and_process_multitask_bioasq(filepath, is_training=True):
                     
                 multitask_records.append({
                     "id": q['id'],
-                    "task_id": 0,  # Flag d'identification de tâche explicite
+                    "task_id": 0,  
                     "type": q['type'],
                     "context": context_normalized,
                     "question": q['body'].strip(),
-                    "label": -1,   # Label ignoré pour la tête classification
+                    "label": -1,   # Label ignored for classification
                     "answers": {
                         "text": valid_texts,
                         "answer_start": valid_starts
