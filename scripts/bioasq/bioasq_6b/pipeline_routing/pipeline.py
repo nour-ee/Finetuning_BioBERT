@@ -12,11 +12,11 @@ class BioASQRoutingPipeline:
         print("Initializing Routing Pipeline and loading models...")
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
-        # 1. Load the Factoid/List Extraction Model
+        # Load the Factoid/List Extraction Model
         self.qa_tokenizer = AutoTokenizer.from_pretrained(qa_model_path)
         self.qa_model = AutoModelForQuestionAnswering.from_pretrained(qa_model_path).to(self.device)
         
-        # 2. Load the Yes/No Classification Model
+        # Load the Yes/No Classification Model
         self.yn_tokenizer = AutoTokenizer.from_pretrained(yesno_model_path)
         self.yn_model = AutoModelForSequenceClassification.from_pretrained(yesno_model_path).to(self.device)
         
@@ -40,10 +40,6 @@ class BioASQRoutingPipeline:
         # =====================================================================
         if question_type in ['factoid', 'list']:
             all_candidates = {}
-
-            # # Tenter d'extraire le nombre de réponses attendues (ex: "list 6 symptoms")
-            # match_number = re.search(r'\b(list|give|name)\s+(\d+)\b', question.lower())
-            # expected_count = int(match_number.group(2)) if match_number else None
 
             # Loop through each snippet individually (As-Snippets-is Strategy)
             for snippet in snippets_list:
@@ -77,11 +73,6 @@ class BioASQRoutingPipeline:
                         # Filter the invalid or reversed indices
                         if start_idx >= len(start_probs) or end_idx >= len(end_probs) or start_idx > end_idx:
                             continue
-                        # A SUPPRIMER
-                        # Ignorer si la réponse est trop longue (plus de 15 tokens)
-                        
-                        # if end_idx - start_idx + 1 > 15:
-                        #     continue
 
                         # Calculate the combined span probability (P_start * P_end)
                         span_prob = start_probs[start_idx] * end_probs[end_idx]
