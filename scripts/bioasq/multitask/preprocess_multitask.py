@@ -120,7 +120,7 @@ if __name__ == "__main__":
     )
     
     # Save the processed datasets in JSON files
-    train_dataset_raw.to_json("datasets/multitask_bioasq_train13b.json", orient="records", lines=True)
-    val_dataset_raw.to_json("datasets/multitask_bioasq_val13b.json", orient="records", lines=True)
+    train_dataset_raw.to_json("datasets/multitask_bioasq13b_train1.json", orient="records", lines=True)
+    val_dataset_raw.to_json("datasets/multitask_bioasq13b_val.json", orient="records", lines=True)
 
-    print("The training dataset is saved as `multitask_bioasq_train13b.json` and the validation dataset as `multitask_bioasq_val13b.json` in datasets directory.")
+    print("The training dataset is saved as `multitask_bioasq13b_train.json` and the validation dataset as `multitask_bioasq13b_val.json` in datasets directory.")
