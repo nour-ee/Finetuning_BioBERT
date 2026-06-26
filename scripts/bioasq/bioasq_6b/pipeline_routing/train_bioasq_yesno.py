@@ -2,7 +2,6 @@ import json
 import numpy as np
 import pandas as pd
 from datasets import Dataset
-#import evaluate
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer
 
 # ========================
@@ -64,13 +63,6 @@ def tokenize_yesno(examples):
 tokenized_train = train_dataset.map(tokenize_yesno, batched=True)
 tokenized_val = val_dataset.map(tokenize_yesno, batched=True)
 
-#clf_metrics = evaluate.combine(["accuracy", "f1", "precision", "recall"])
-
-# def compute_metrics(eval_pred):
-#     logits, labels = eval_pred
-#     predictions = np.argmax(logits, axis=-1)
-#     return clf_metrics.compute(predictions=predictions, references=labels)
-
 training_args = TrainingArguments(
     output_dir="./biobert_bioasq13b_yesno_model",
     evaluation_strategy="epoch",
@@ -87,30 +79,11 @@ trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=tokenized_train,
-    eval_dataset=tokenized_val#,
-    #compute_metrics=compute_metrics,
+    eval_dataset=tokenized_val
 )
 
 print("Starting model fine-tuning...")
 trainer.train()
-
-# print("Running final validation evaluation...")
-# eval_results = trainer.evaluate()
-
-# # Save performance configuration to CSV
-# performance_data = {
-#     "Stage": ["Validation (13B1)"],
-#     "Model Source": [model_name],
-#     "Dataset Samples": [num_val_samples],
-#     "Loss": [eval_results.get("eval_loss")],
-#     "Accuracy": [eval_results.get("eval_accuracy")],
-#     "F1-Score": [eval_results.get("eval_f1")],
-#     "Precision": [eval_results.get("eval_precision")],
-#     "Recall": [eval_results.get("eval_recall")]
-# }
-
-# df_performance = pd.DataFrame(performance_data)
-# df_performance.to_csv("biobert_bioasq6b_yesno_train_performance.csv", index=False)
 
 # ==============================
 # SAVE MODEL AND TOKENIZER
