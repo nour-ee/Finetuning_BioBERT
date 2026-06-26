@@ -2,6 +2,7 @@ import pandas as pd
 import ast
 import re
 import os
+from sklearn.metrics import f1_score 
 
 def clean_eval_string(text):
     """ Clean the medical text by removing punctuation and extra spaces. """
@@ -49,13 +50,17 @@ def calculate_pipeline_performance(csv_filepath, output_csv="./results/pipeline_
     if not df_yn.empty:
         y_true = df_yn["Ground Truth Answer"].apply(lambda x: str(x).lower().strip("[]'\" "))
         y_pred = df_yn["Pipeline Predicted Answer"].str.lower().str.strip()
+        
         accuracy_yn = (y_true == y_pred).mean()
+        f1_yn = f1_score(y_true, y_pred, average='macro', zero_division=0)
         
         print(f"\n--- PERFORMANCE YES/NO (Total: {len(df_yn)}) ---")
-        print(f"Accuracy : {accuracy_yn * 100:.2f}%")
-        metrics_data["Metric Name"].append("Accuracy")
-        metrics_data["Question Type"].append("yesno")
-        metrics_data["Value"].append(accuracy_yn)
+        print(f"Accuracy    : {accuracy_yn * 100:.2f}%")
+        print(f"F1-Score : {f1_yn * 100:.2f}%")
+        
+        metrics_data["Metric Name"].extend(["Accuracy", "F1-Score"])
+        metrics_data["Question Type"].extend(["yesno", "yesno"])
+        metrics_data["Value"].extend([accuracy_yn, f1_yn])
     
     # ==========================================
     # EVALUATION FACTOID
@@ -99,7 +104,7 @@ def calculate_pipeline_performance(csv_filepath, output_csv="./results/pipeline_
             
             # Split the string by the pipe "|" and clean each extracted entity
             preds_list = [clean_eval_string(p) for p in raw_pred.split("|")]
-            preds_list = [p for p in preds_list if p]  # Filter out any remaining empty strings ( if p = False in case of empty strings)
+            preds_list = [p for p in preds_list if p]  # Filter out any remaining empty strings
             
             if not preds_list:
                 continue
@@ -110,7 +115,7 @@ def calculate_pipeline_performance(csv_filepath, output_csv="./results/pipeline_
                 if any(p in t or t in p for t in truths if t):
                     true_positives += 1
             
-            # Calcjulate precision and recall for the current question
+            # Calculate precision and recall for the current question
             precision = true_positives / len(preds_list) if len(preds_list) > 0 else 0
             recall = true_positives / max(1, len(truths))
             
