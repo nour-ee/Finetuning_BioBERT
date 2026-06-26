@@ -139,20 +139,20 @@ class MultitaskTrainer(Trainer):
 # 3. TRAINING MULTITASK BIOBERT ON BIOASQ DATASET
 # =====================================================================
 if __name__ == "__main__":
-    print("\n--- CHARGEMENT DES FICHIERS JSON PRÉPARÉS ---")
-    raw_train = load_dataset("json", data_files="datasets/multitask_bioasq_train.json")['train']
-    raw_val = load_dataset("json", data_files="datasets/multitask_bioasq_val.json")['train']
+    print("\n--- Loading training and validation datasets ---")
+    raw_train = load_dataset("json", data_files="datasets/multitask_bioasq13b_train.json")['train']
+    raw_val = load_dataset("json", data_files="datasets/multitask_bioasq13b_val.json")['train']
     
     columns_to_remove = raw_train.column_names
 
-    print("Mapping et alignement des tokens (Train)...")
+    print("Mapping and token alignment (Train)...")
     train_ds = raw_train.map(preprocess_multitask_examples, batched=True, remove_columns=columns_to_remove)
-    print("Mapping et alignement des tokens (Validation)...")
+    print("Mapping and token alignment (Validation)...")
     val_ds = raw_val.map(preprocess_multitask_examples, batched=True, remove_columns=columns_to_remove)
     
-    print(f"Taille après Tokenisation & Augmentation - Train: {len(train_ds)} | Val: {len(val_ds)}")
+    print(f"Size after Tokenization & Augmentation - Train: {len(train_ds)} | Val: {len(val_ds)}")
 
-    print("\n--- ENTRAÎNEMENT DU MODÈLE MULTITÂCHE ---")
+    print("\n --- Training Multitask BioBERT on BioASQ dataset ---")
     model = MultitaskBioBERT()
     
     training_args = TrainingArguments(
