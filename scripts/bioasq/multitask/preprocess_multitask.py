@@ -107,20 +107,20 @@ if __name__ == "__main__":
 
     print("\n--- PREPROCESSING DATASETS ---")
     
-    # Path to your official BioASQ training file (e.g., BioASQ-training6b.json)
+    # Path to your official BioASQ training file (e.g., training13b.json)
     train_dataset_raw = load_and_process_multitask_bioasq(
-        'datasets/BioASQ-training6b/BioASQ-trainingDataset6b.json', 
+        'datasets/BioASQ-training13b/BioASQ-training13b/training13b.json', 
         is_training=True
     )
     
-    # Path to your first golden validation file (e.g., 6B1_golden.json)
+    # Path to your first golden validation file (e.g., 13B1_golden.json)
     val_dataset_raw = load_and_process_multitask_bioasq(
-        'datasets/Task6BGoldenEnriched/6B1_golden.json', 
+        'datasets/Task6BGoldenEnriched/13B1_golden.json', 
         is_training=False
     )
     
     # Save the processed datasets in JSON files
-    train_dataset_raw.to_json("datasets/multitask_bioasq_train6b.json", orient="records", lines=True)
-    val_dataset_raw.to_json("datasets/multitask_bioasq_val6b.json", orient="records", lines=True)
+    train_dataset_raw.to_json("datasets/multitask_bioasq_train13b.json", orient="records", lines=True)
+    val_dataset_raw.to_json("datasets/multitask_bioasq_val13b.json", orient="records", lines=True)
 
-    print("The training dataset is saved as `multitask_bioasq_train6b.json` and the validation dataset as `multitask_bioasq_val6b.json` in datasets directory.")
+    print("The training dataset is saved as `multitask_bioasq_train13b.json` and the validation dataset as `multitask_bioasq_val13b.json` in datasets directory.")
