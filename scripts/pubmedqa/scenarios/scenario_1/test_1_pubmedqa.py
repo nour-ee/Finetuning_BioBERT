@@ -3,7 +3,6 @@ import csv
 import numpy as np
 from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
-# Import des outils d'évaluation 
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, classification_report
 
 # 1. Load the SAVED finalized model and tokenizer
