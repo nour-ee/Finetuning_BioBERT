@@ -118,11 +118,6 @@ def load_and_process_bioasq(filepath):
 # Load and process the official BioASQ training dataset (e.g., BioASQ-training13b.json)
 hf_dataset = load_and_process_bioasq('datasets/BioASQ-training6b/BioASQ-trainingDataset6b.json')
 
-# # Vérification des -1
-# if len(hf_dataset) > 0:
-#     minus_one_count = sum(1 for example in hf_dataset if example['answers']['answer_start'][0] == -1)
-#     print(f"Number of examples with -1 (should be 0): {minus_one_count}")
-
 # Statistics of the generated dataset
 factoid_count = sum(1 for example in hf_dataset if example['type'].startswith('factoid'))
 list_count = sum(1 for example in hf_dataset if example['type'].startswith('list'))
@@ -135,25 +130,7 @@ hf_dataset.to_json(output_json_path, orient="records", lines=True)
 print(f"Dataset saved successfully in : {output_json_path}\n")
 
 
-##################### PREPROCESSING TEST FILES ########################
-# for batch_num in range(1, 5):
-#     batch_file = f"datasets/Task6BGoldenEnriched/6B{batch_num}_golden.json"
-#     print(f"Processing {batch_file}...")
-#     hf_dataset = load_and_process_bioasq(batch_file)
-    
-#     # if len(hf_dataset) > 0:
-#     #     minus_one_count = sum(1 for example in hf_dataset if example['answers']['answer_start'][0] == -1)
-#     #     print(f"Number of examples with -1 (should be 0): {minus_one_count}")
-
-#     factoid_count = sum(1 for example in hf_dataset if example['type'].startswith('factoid'))
-#     list_count = sum(1 for example in hf_dataset if example['type'].startswith('list'))
-
-#     print(f"Number of valid factoid snippet-samples: {factoid_count}")
-#     print(f"Number of valid list snippet-samples: {list_count}")
-
-#     output_json_path = f"datasets/13B{batch_num}_processed2.json"
-#     hf_dataset.to_json(output_json_path, orient="records", lines=True)
-#     print(f"Dataset saved successfully in : {output_json_path}\n")
+##################### PREPROCESSING VALIDATION FILE ########################
     
 batch_file = f"datasets/Task6BGoldenEnriched/6B1_golden.json"
 print(f"Processing {batch_file}...")
