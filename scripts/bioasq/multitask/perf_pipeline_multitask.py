@@ -124,28 +124,28 @@ def calculate_performances_pipeline(csv_filepath, output_csv="./results/multitas
             macro_f1
         ])
         
-        # ==========================================
-        # EVALUATION FACTOID
-        # ==========================================
-        df_fact = df[df["Question Type"] == "factoid"]
-        if not df_fact.empty:
-            exact_matches = 0
-            for _, row in df_fact.iterrows():
-                pred = clean_eval_string(row["Pipeline Predicted Answer"])
-                if pred == "no extraction found" or not pred:
-                    continue
+    # ==========================================
+    # EVALUATION FACTOID
+    # ==========================================
+    df_fact = df[df["Question Type"] == "factoid"]
+    if not df_fact.empty:
+        exact_matches = 0
+        for _, row in df_fact.iterrows():
+            pred = clean_eval_string(row["Pipeline Predicted Answer"])
+            if pred == "no extraction found" or not pred:
+                continue
                     
-                truths = extract_valid_options(row["Ground Truth Answer"])
+            truths = extract_valid_options(row["Ground Truth Answer"])
                 
-                if any(pred in t or t in pred for t in truths if t):
-                    exact_matches += 1
+            if any(pred in t or t in pred for t in truths if t):
+                exact_matches += 1
                     
-            strict_accuracy = exact_matches / len(df_fact)
-            print(f"\n--- PERFORMANCE FACTOID (Total: {len(df_fact)}) ---")
-            print(f"Strict Accuracy (Flexible Match) : {strict_accuracy * 100:.2f}%")
-            metrics_data["Metric Name"].append("Strict Accuracy (EM)")
-            metrics_data["Question Type"].append("factoid")
-            metrics_data["Value"].append(strict_accuracy)
+        strict_accuracy = exact_matches / len(df_fact)
+        print(f"\n--- PERFORMANCE FACTOID (Total: {len(df_fact)}) ---")
+        print(f"Strict Accuracy (Flexible Match) : {strict_accuracy * 100:.2f}%")
+        metrics_data["Metric Name"].append("Strict Accuracy (EM)")
+        metrics_data["Question Type"].append("factoid")
+        metrics_data["Value"].append(strict_accuracy)
 
     # ==========================================
     # EVALUATION LIST 
@@ -229,6 +229,6 @@ def calculate_performances_pipeline(csv_filepath, output_csv="./results/multitas
 if __name__ == "__main__":
     print("=== PERFORMANCE OF MULTITASK MODEL ===")
     calculate_performances_pipeline(
-        csv_filepath="./results/multitask_pipeline_predictions_combined.csv",
+        csv_filepath="./results/multitask_pipeline_predictions_6B_combined.csv",
         output_csv="./results/multitask_metrics_summary.csv"
     )
