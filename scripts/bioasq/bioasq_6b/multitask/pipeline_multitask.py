@@ -6,7 +6,7 @@ import glob
 import pandas as pd
 import numpy as np
 from transformers import AutoTokenizer
-from scripts.bioasq.paper_approach.train_multitask import MultitaskBioBERT 
+from scripts.bioasq.bioasq_6b.train_multitask import MultitaskBioBERT 
 
 class UnifiedBioASQPipeline:
     def __init__(self, model_weights_path, tokenizer_path):
