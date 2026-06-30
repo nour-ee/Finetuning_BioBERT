@@ -229,6 +229,6 @@ def calculate_performances_pipeline(csv_filepath, output_csv="./results/multitas
 if __name__ == "__main__":
     print("=== PERFORMANCE OF MULTITASK MODEL ===")
     calculate_performances_pipeline(
-        csv_filepath="./results/multitask_pipeline_predictions_6B_combined.csv",
+        csv_filepath="./results/multitask_pipeline_predictions_combined.csv",
         output_csv="./results/multitask_metrics_summary.csv"
     )
