@@ -73,7 +73,9 @@ class BioASQRoutingPipeline:
                         # Filter the invalid or reversed indices
                         if start_idx >= len(start_probs) or end_idx >= len(end_probs) or start_idx > end_idx:
                             continue
-
+                        # Calculate the combined span probability (P_start * P_end)
+                        span_prob = start_probs[start_idx] * end_probs[end_idx]
+                        
                         # Decode the answer text from the token indices
                         all_tokens = self.qa_tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
                         ans_text = self.qa_tokenizer.convert_tokens_to_string(all_tokens[start_idx : end_idx + 1]).strip()
